@@ -7,14 +7,15 @@ backup=$3
 conf=/etc/nginx/conf.d/domains/office.ebaoguo.com.conf
 unit=/etc/systemd/system/ebaoguo-office.service
 base=/opt/ebaoguo-office
+renew=/etc/letsencrypt/renewal-hooks/deploy/ebaoguo-office.sh
 mkdir -p "$backup"
 curl -fsS -o /dev/null -w 'Main website baseline: %{http_code}\n' https://ebaoguo.com/ > "$backup/baseline.txt"
 nginx -t
 # This first installation must not replace an existing site/service without reading it first.
-[[ ! -e "$conf" && ! -e "$unit" && ! -e "$base/current" ]]
+[[ ! -e "$conf" && ! -e "$unit" && ! -e "$base/current" && ! -e "$renew" ]]
 rollback() {
   systemctl disable --now ebaoguo-office.service || true
-  rm -f "$conf" "$unit" "$base/current"
+  rm -f "$conf" "$unit" "$base/current" "$renew"
   systemctl daemon-reload
   nginx -t && systemctl reload nginx
 }
@@ -61,4 +62,7 @@ done
 curl -fsS --max-time 10 --resolve office.ebaoguo.com:443:109.123.234.144 https://office.ebaoguo.com/login > /dev/null
 curl -fsS https://ebaoguo.com/ > /dev/null
 journalctl -u ebaoguo-office.service -n 30 --no-pager > "$backup/service-log.txt"
+mkdir -p "$(dirname "$renew")"
+printf '%s\n' '#!/bin/sh' 'set -e' '/usr/sbin/nginx -t' '/bin/systemctl reload nginx' > "$renew"
+chmod 755 "$renew"
 trap - ERR
