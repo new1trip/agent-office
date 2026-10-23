@@ -55,10 +55,10 @@ done
 grep -q '易包裹' "$backup/login.html"
 # Nginx reload returns before new workers finish accepting TLS connections.
 for attempt in $(seq 1 20); do
-  if curl -fsS --max-time 5 https://office.ebaoguo.com/login > /dev/null 2>&1; then break; fi
+  if curl -fsS --max-time 5 --resolve office.ebaoguo.com:443:109.123.234.144 https://office.ebaoguo.com/login > /dev/null 2>&1; then break; fi
   sleep 0.5
 done
-curl -fsS --max-time 10 https://office.ebaoguo.com/login > /dev/null
+curl -fsS --max-time 10 --resolve office.ebaoguo.com:443:109.123.234.144 https://office.ebaoguo.com/login > /dev/null
 curl -fsS https://ebaoguo.com/ > /dev/null
 journalctl -u ebaoguo-office.service -n 30 --no-pager > "$backup/service-log.txt"
 trap - ERR
