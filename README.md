@@ -11,6 +11,8 @@
 
 **A 3D office your team shares with its coding agents.**
 
+**Ebaoguo deployment:** [office.ebaoguo.com](https://office.ebaoguo.com) · [中文使用与运维说明](docs/ebaoguo-office.md).
+
 Sit **Claude Code**, **Codex**, **OpenCode**, **Grok**, **Muse**, **DeepSeek Harness** and **Cursor** workers at desks, watch each one's terminal on the laptop in front of it,
 and jump into any of them together. Every GitHub repo is a floor of the building.
 
