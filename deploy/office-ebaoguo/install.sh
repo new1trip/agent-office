@@ -27,11 +27,14 @@ tar xzf "$bundle" -C "$base/releases/$release"
 cd "$base/releases/$release"
 npm ci --omit=dev --ignore-scripts --no-fund --no-audit > "$backup/npm-ci.log" 2>&1
 # Start with individual accounts only, even before the owner redeems the invite.
-[[ ! -e /var/lib/ebaoguo-office/.agent-office/accounts.json ]]
-printf '%s\n' '{"accounts":[],"invites":[],"sharedPassword":false}' > /var/lib/ebaoguo-office/.agent-office/accounts.json
-chown agentoffice:agentoffice /var/lib/ebaoguo-office/.agent-office/accounts.json
-runuser -u agentoffice -- node bin/agent-office.js accounts invite Hao --admin --dir /var/lib/ebaoguo-office > "$backup/owner-invite.txt"
-chmod 600 "$backup/owner-invite.txt"
+if [[ ! -e /var/lib/ebaoguo-office/.agent-office/accounts.json ]]; then
+  printf '%s\n' '{"accounts":[],"invites":[],"sharedPassword":false}' > /var/lib/ebaoguo-office/.agent-office/accounts.json
+  chown agentoffice:agentoffice /var/lib/ebaoguo-office/.agent-office/accounts.json
+  runuser -u agentoffice -- node bin/agent-office.js accounts invite Hao --admin --dir /var/lib/ebaoguo-office > "$backup/owner-invite.txt"
+  chmod 600 "$backup/owner-invite.txt"
+else
+  python3 -c 'import json; assert json.load(open("/var/lib/ebaoguo-office/.agent-office/accounts.json"))["sharedPassword"] is False'
+fi
 ln -s "$base/releases/$release" "$base/current"
 cp deploy/office-ebaoguo/office.service "$unit"
 # HTTP is challenge-only while the certificate is issued.
@@ -50,7 +53,12 @@ for attempt in $(seq 1 20); do
   sleep 0.5
 done
 grep -q '易包裹' "$backup/login.html"
-curl -fsS https://office.ebaoguo.com/login > /dev/null
+# Nginx reload returns before new workers finish accepting TLS connections.
+for attempt in $(seq 1 20); do
+  if curl -fsS --max-time 5 https://office.ebaoguo.com/login > /dev/null 2>&1; then break; fi
+  sleep 0.5
+done
+curl -fsS --max-time 10 https://office.ebaoguo.com/login > /dev/null
 curl -fsS https://ebaoguo.com/ > /dev/null
 journalctl -u ebaoguo-office.service -n 30 --no-pager > "$backup/service-log.txt"
 trap - ERR
