@@ -15,6 +15,14 @@ export const JUKEBOX_TUNES: readonly JukeboxTune[] = [
   { id: 'green-build', title: 'Green Build', mood: 'bright and bouncy' },
 ];
 
+/** Public live radio; programming and availability are controlled by the broadcaster. */
+export const CLASSIC_RADIO = {
+  title: '华语经典 · MELODY',
+  mood: '含 80／90 年代金曲 · 直播节目，并非纯年代歌单',
+  url: 'https://stream.rcs.revma.com/zqm9tgtbv4uvv',
+  website: 'https://audio1.syok.my/amp-melody',
+} as const;
+
 /** The `track` of a stream someone pasted. */
 export const STREAM = 'stream';
 
@@ -37,6 +45,7 @@ export const tuneById = (id: string): JukeboxTune | undefined => JUKEBOX_TUNES.f
 /** What's on, for the hint bar and the jukebox's own display: a tune's title, or where the stream comes from. */
 export function trackTitle(s: Pick<JukeboxState, 'track' | 'url'>): string {
   if (s.track !== STREAM) return tuneById(s.track)?.title ?? 'A tune';
+  if (s.url === CLASSIC_RADIO.url) return CLASSIC_RADIO.title;
   try {
     const u = new URL(s.url ?? '');
     const file = decodeURIComponent(u.pathname.split('/').filter(Boolean).pop() ?? '');
