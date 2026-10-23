@@ -1,0 +1,24 @@
+[Unit]
+Description=Ebaoguo AI Office
+After=network.target
+[Service]
+Type=simple
+User=agentoffice
+Group=agentoffice
+WorkingDirectory=/opt/ebaoguo-office/current
+Environment=HOME=/var/lib/ebaoguo-office
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node bin/agent-office.js --home /var/lib/ebaoguo-office --projects /var/lib/ebaoguo-office/projects --host 127.0.0.1 --port 4700 --trust-proxy --no-open --max-workers 1 --city Melbourne
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/ebaoguo-office
+MemoryMax=4G
+TasksMax=512
+LimitNOFILE=65536
+[Install]
+WantedBy=multi-user.target

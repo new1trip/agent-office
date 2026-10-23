@@ -1,25 +1,32 @@
 import './ui.css';
-import { JUKEBOX_TUNES, STREAM, checkStreamUrl, trackTitle, tuneById } from '../../../shared/jukebox';
+import { CLASSIC_RADIO, JUKEBOX_TUNES, STREAM, checkStreamUrl, trackTitle, tuneById } from '../../../shared/jukebox';
 import type { Net } from '../../net';
 import { store } from '../../state';
 import { h, openModal, toast } from '../../ui/dom';
 
 /** The jukebox: what's on, the tunes to pick from, skip and stop, and a box for a stream. */
-export function openJukebox(net: Net, openVolume: () => void) {
+export function openJukebox(net: Net, openVolume: () => void, enableMusic: () => void = () => {}) {
+  const playMusic = (choice: { track?: string; url?: string } = {}) => {
+    enableMusic();
+    net.send({ t: 'jukebox.play', ...choice });
+  };
   const close = h('button.btn.close', { 'aria-label': 'Close' }, '✕');
   const now = h('div.jb-now');
   const list = h('ul.svc-list');
   const url = h('input', { type: 'text', placeholder: 'https://… internet radio, or a link to an .mp3', 'aria-label': 'Stream or audio file link', spellcheck: 'false', autocomplete: 'off' }) as HTMLInputElement;
   const playUrl = h('button.btn.primary', { type: 'button' }, '📻 Play');
-  const volume = h('button.btn', { type: 'button' }, '🔈 Your volume');
+  const volume = h('button.btn', { type: 'button' }, '🔈 我的音量 / 静音');
   const el = h(
     'div.modal.jukebox',
     { role: 'dialog', 'aria-label': 'Jukebox' },
-    h('header', {}, h('h2', {}, '🎵 Jukebox'), close),
+    h('header', {}, h('h2', {}, '🎵 办公室音乐'), close),
     h(
       'div.body',
       {},
       now,
+      h('label', { style: 'margin-top:16px' }, '80／90 华语金曲'),
+      h('button.btn.primary', { type: 'button', onclick: () => playMusic({ url: CLASSIC_RADIO.url }) }, '📻 播放华语经典 · MELODY'),
+      h('p.setting-note', {}, CLASSIC_RADIO.mood, ' · ', h('a', { href: CLASSIC_RADIO.website, target: '_blank', rel: 'noopener noreferrer' }, '官方播放器')),
       h('label', { style: 'margin-top:16px' }, 'Put on a tune'),
       list,
       h('label', { style: 'margin-top:16px' }, 'Or play a stream'),
@@ -42,8 +49,8 @@ export function openJukebox(net: Net, openVolume: () => void) {
         h('div.svc-title', {}, j.on ? trackTitle(j) : 'The jukebox is off'),
         h('div.svc-meta', {}, j.on ? [stream ? 'a stream' : tuneById(j.track)?.mood, j.by && `put on by ${j.by}`].filter(Boolean).join(' · ') : j.by ? `${j.by} turned it off` : 'Pick a tune to put it on'),
       ),
-      j.on ? button('⏭️ Skip', 'On to the next tune', () => net.send({ t: 'jukebox.skip' })) : button('▶️ Play', `Put ${trackTitle(j)} back on`, () => net.send({ t: 'jukebox.play' }), true),
-      j.on ? button('⏹️ Stop', 'Turn the jukebox off', () => net.send({ t: 'jukebox.stop' })) : '',
+      j.on ? button('⏭️ Skip', 'On to the next tune', () => net.send({ t: 'jukebox.skip' })) : button('▶️ Play', `Put ${trackTitle(j)} back on`, () => playMusic(), true),
+      j.on ? button('⏹️ 停止播放', 'Turn the jukebox off', () => net.send({ t: 'jukebox.stop' })) : '',
     );
     list.replaceChildren(
       ...JUKEBOX_TUNES.map((t) => {
@@ -55,7 +62,7 @@ export function openJukebox(net: Net, openVolume: () => void) {
           h('div.svc-main', {}, h('div.svc-title', {}, t.title), h('div.svc-meta', {}, t.mood)),
         );
         const pick = () => {
-          if (!playing) net.send({ t: 'jukebox.play', track: t.id });
+          if (!playing) playMusic({ track: t.id });
         };
         li.addEventListener('click', pick);
         li.addEventListener('keydown', (e) => {
@@ -75,7 +82,7 @@ export function openJukebox(net: Net, openVolume: () => void) {
       toast(u.error, 'warn');
       return url.focus();
     }
-    net.send({ t: 'jukebox.play', url: u.url });
+    playMusic({ url: u.url });
     url.value = '';
   };
   playUrl.addEventListener('click', play);

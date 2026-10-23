@@ -1,8 +1,8 @@
 import { trackTitle } from '../../../shared/jukebox';
 import type { Ctx } from '../../core/context';
 import { aside, hintTitle, key, onE } from '../../core/hint';
-import { store } from '../../state';
-import { clip } from '../../ui/dom';
+import { saveSettings, store } from '../../state';
+import { h, clip } from '../../ui/dom';
 import { openJukebox } from './ui';
 import type { SettingsPane } from '../../ui/settings';
 
@@ -20,6 +20,8 @@ export interface JukeboxDeps {
 
 /** The jukebox on your floor, the office's own: what's on, and E to put a song on. */
 export function installJukebox(ctx: Ctx, deps: JukeboxDeps) {
+  document.querySelector('.topbar')?.append(h('button.btn', { type: 'button', onclick: () => showJukebox(), 'aria-label': '办公室音乐' }, '🎵 音乐'));
+
   // The jukebox on your floor: everyone there hears it from the same bar, and its lights say what's on.
   // It's the office's: on a map of its own there's none to hear.
   function playJukebox() {
@@ -39,7 +41,11 @@ export function installJukebox(ctx: Ctx, deps: JukeboxDeps) {
   });
 
   function showJukebox() {
-    openJukebox(ctx.net, () => deps.showSettings('sound'));
+    openJukebox(ctx.net, () => deps.showSettings('sound'), () => {
+      ctx.settings.musicMuted = false;
+      saveSettings(ctx.settings);
+      ctx.sound.setMusicVolume(ctx.settings.music, false);
+    });
   }
 
   return { playJukebox };
